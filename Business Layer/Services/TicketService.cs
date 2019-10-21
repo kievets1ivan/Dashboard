@@ -1,61 +1,48 @@
 ﻿using AutoMapper;
-using Business_Layer.DTO;
+using Business_Layer.EntitiesBL;
 using DAL.Entities;
 using DAL.UoW;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Business_Layer.Services
 {
-    public interface ITicketService
-    {
-        void AddTicket(TicketDtoService ticketEntity);
-        void DeleteTicket(TicketDtoService ticketEntity);
-        void EditTicket(TicketDtoService ticketEntity);
-        IEnumerable<TicketDtoService> GetAll();
-        TicketDtoService GetTicketById(int id);
-    }
 
     public class TicketService : ITicketService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public TicketService(IUnitOfWork unitOfWork)
+        public TicketService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
-            _mapper = AutomapperConfig.ConfigurationMapper();
+            _mapper = mapper;
         }
 
-        public IEnumerable<TicketDtoService> GetAll()
+
+        public async Task<IEnumerable<TicketBL>> GetAll() => _mapper.Map<List<TicketBL>>(await _unitOfWork.TicketRepository.GetAll());
+
+        public async Task<TicketBL> GetTicketById(int id) => _mapper.Map<TicketBL>(await _unitOfWork.TicketRepository.GetById(id));
+
+        public async Task<TicketBL> AddTicket(TicketBL ticket)
         {
-            return _mapper.Map<List<TicketDtoService>>(_unitOfWork.TicketRepository.GetAll());
+            await _unitOfWork.TicketRepository.Add(_mapper.Map<TicketEntity>(ticket));
+            _unitOfWork.Save();
+            return await GetTicketById(ticket.Id);
         }
 
-        public void AddTicket(TicketDtoService ticketEntity)
+        public async Task DeleteTicket(int id)
         {
-            _unitOfWork.TicketRepository.Add(_mapper.Map<TicketEntity>(ticketEntity));
+            await _unitOfWork.TicketRepository.Delete(id);
             _unitOfWork.Save();
         }
 
-        public void DeleteTicket(TicketDtoService ticketEntity)
-        {
-            _unitOfWork.TicketRepository.Delete(_mapper.Map<TicketEntity>(ticketEntity));
-            _unitOfWork.Save();
-        }
 
-        public TicketDtoService GetTicketById(int id)
+        public async Task<TicketBL> EditTicket(TicketBL ticket)
         {
-            return _mapper.Map<TicketDtoService>(_unitOfWork.TicketRepository.GetById(id));
-        }
-
-        public void EditTicket(TicketDtoService ticketEntity)
-        {
-            _unitOfWork.TicketRepository.Update(_mapper.Map<TicketEntity>(ticketEntity));
+            await _unitOfWork.TicketRepository.Update(_mapper.Map<TicketEntity>(ticket));
             _unitOfWork.Save();
+            return await GetTicketById(ticket.Id);
         }
     }
 }

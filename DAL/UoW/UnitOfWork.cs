@@ -1,40 +1,39 @@
 ﻿using DAL.Entities;
+using DAL.Interfaces;
 using DAL.Repositories;
+using Ninject;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace DAL.UoW
 {
-    public interface IUnitOfWork
-    {
-        GenericRepository<TicketEntity> TicketRepository { get; }
-        void Dispose();
-        void Save();
-    }
 
     public class UnitOfWork : IUnitOfWork
     {
-        private GenericRepository<TicketEntity> _ticketRepository;
+        private IRepositoryFactory<IGenericRepository<TicketEntity>, DbContext> _factory;
+        private IGenericRepository<TicketEntity> _ticketRepository;
 
         private TicketContext _ticketContext;
 
 
-        public UnitOfWork(TicketContext ticketContext)
+        public UnitOfWork(TicketContext ticketContext, IRepositoryFactory<IGenericRepository<TicketEntity>, DbContext> factory)
         {
+            _factory = factory;
             _ticketContext = ticketContext;
         }
 
 
-        public GenericRepository<TicketEntity> TicketRepository
+        public IGenericRepository<TicketEntity> TicketRepository
         {
             get
             {
                 if (_ticketRepository == null)
                 {
-                    _ticketRepository = new GenericRepository<TicketEntity>(_ticketContext);
+                    _ticketRepository = _factory.Create(_ticketContext);
                 }
 
                 return _ticketRepository;
